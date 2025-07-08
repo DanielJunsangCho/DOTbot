@@ -1,2 +1,2 @@
 # DOTbot
-AI agent for unstructured to structured data
+AI agent for converting unstructured website data to structured data
