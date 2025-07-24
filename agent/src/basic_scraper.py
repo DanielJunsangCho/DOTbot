@@ -19,7 +19,7 @@ tools = [url_handler, write_to_csv, Done]
 tools_by_name = {tool.name: tool for tool in tools}
 background = None
 
-llm = init_chat_model("openai:gpt-4.1", temperature=0.0)
+llm = init_chat_model("openai:gpt-4.1-mini", temperature=0.0)
 llm_with_tools = llm.bind_tools(tools, tool_choice="any")
 
 def llm_call(state: State):
@@ -102,6 +102,6 @@ overall_workflow.add_edge("tool_handler", "llm_call")
 # Compile the agent
 agent = overall_workflow.compile()
 
-response = agent.invoke({"url": "https://news.google.com/home?hl=en-US&gl=US&ceid=US:en", 
-                        "messages": [HumanMessage(content="Find me the headlines and summaries of these articles")]})
+response = agent.invoke({"url": "https://www.scrapethissite.com/pages/forms/", 
+                        "messages": [HumanMessage(content="Find info about the hockey teams and their info")]})
 
