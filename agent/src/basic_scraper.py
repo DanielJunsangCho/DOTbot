@@ -14,12 +14,14 @@ from langchain_core.messages import HumanMessage
 from dotenv import load_dotenv
 load_dotenv("../../.env")
 
+# from ... import config
+
 # Collect all tools
 tools = [url_handler, write_to_csv, Done]
 tools_by_name = {tool.name: tool for tool in tools}
 background = None
 
-llm = init_chat_model("openai:gpt-4.1-mini", temperature=0.0)
+llm = init_chat_model("openai:gpt-4-turbo", temperature=0.0)
 llm_with_tools = llm.bind_tools(tools, tool_choice="any")
 
 def llm_call(state: State):
@@ -32,10 +34,11 @@ def llm_call(state: State):
                 # Add the system prompt
                 [   
                     {"role": "system", "content": agent_system_prompt.format(
+                        url=state['url'],
                         url_tools_prompt=URL_TOOLS_PROMPT,
                         csv_tools_prompt=CSV_TOOLS_PROMPT,
                         background=background,
-                    ) + f"\n\nThe URL to scrape is: {state['url']}"
+                    )
                 }
                 ]
                 # Add the current messages to the prompt
@@ -102,6 +105,6 @@ overall_workflow.add_edge("tool_handler", "llm_call")
 # Compile the agent
 agent = overall_workflow.compile()
 
-response = agent.invoke({"url": "https://www.scrapethissite.com/pages/forms/", 
-                        "messages": [HumanMessage(content="Find info about the hockey teams and their info")]})
+response = agent.invoke({"url": "https://www.tradingview.com/markets/stocks-usa/earnings/", 
+                        "messages": [HumanMessage(content="Find me all stocks and their related info")]})
 
