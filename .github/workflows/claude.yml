@@ -28,28 +28,37 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Fetch full history so branch creation and comparison work
+          fetch-depth: 0  # full history needed
 
-      - name: Run Claude Orchestrator
+      - name: Ensure branch exists
+        run: |
+          BRANCH="claude/issue-${{ github.event.issue.number }}-$(date +%s)"
+          git fetch origin main
+          if ! git ls-remote --exit-code origin "$BRANCH"; then
+            git checkout -b "$BRANCH" main
+            git push origin "$BRANCH"
+          fi
+
+      - name: Run Claude Overseer
         id: claude
         uses: anthropics/claude-code-action@beta
-        continue-on-error: true  # Prevent workflow from failing if branch is missing
+        continue-on-error: true
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           additional_permissions: |
             actions: read
           model: "claude-sonnet-4"
           custom_instructions: |
-            You are the OrchestratorAgent.
+            You are the overseer.
             - When an issue is opened, read its title and body.
-            - Match the request to one or more worker agents in /agents.
-            - Call their logic to implement code changes, tests, or validation.
+            - Immediately call the task-orchestrator agent to handle the issue.
             - Create or update branches or PRs as needed.
             - Summarize results in a GitHub comment.
             Available agents:
-            - /agents/branch_agent.yaml       # Ensure branch creation logic exists in agents
-            - /agents/frontend_agent.yaml
-            - /agents/validator_agent.yaml
-            - /agents/reality_manager.yaml
-            - /agents/test_creator.yaml
-            - /agents/webscraping_validator.yaml
+            - /agents/frontend-builder.yaml
+            - /agents/project-reality-manager.yaml
+            - /agents/task-orchestrator.yaml
+            - /agents/fastapi-langgraph-builder.yaml
+            - /agents/fullstack-validator.yaml
+            - /agents/task-completion-validator.yaml
+            - /agents/test-generator-agent.yaml
