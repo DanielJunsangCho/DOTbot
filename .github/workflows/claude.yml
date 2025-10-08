@@ -47,7 +47,7 @@ jobs:
             - Create or update branches or PRs as needed.
             - Summarize results in a GitHub comment.
             Available agents:
-            - /agents/backend_agent.yaml       # Ensure branch creation logic exists in agents
+            - /agents/branch_agent.yaml       # Ensure branch creation logic exists in agents
             - /agents/frontend_agent.yaml
             - /agents/validator_agent.yaml
             - /agents/reality_manager.yaml
