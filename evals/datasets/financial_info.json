@@ -1,0 +1,13 @@
+{
+    "name": "Financial Info",
+    "description": "Dataset for evaluating DOTbot web scraping agent",
+    "dataset": [
+        {
+            "inputs": {"url": "https://www.tradingview.com/markets/stocks-usa/earnings/", "question": "Find me all stocks and their related info"},
+            "outputs": {"answer": ""},
+        },
+        {
+    
+        }
+    ]
+}

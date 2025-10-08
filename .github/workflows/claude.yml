@@ -28,19 +28,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0  # Fetch full history so branch creation and comparison work
 
       - name: Run Claude Orchestrator
         id: claude
         uses: anthropics/claude-code-action@beta
+        continue-on-error: true  # Prevent workflow from failing if branch is missing
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           additional_permissions: |
             actions: read
-
-          # Optional: specify model
           model: "claude-sonnet-4"
-
           custom_instructions: |
             You are the OrchestratorAgent.
             - When an issue is opened, read its title and body.
@@ -49,7 +47,7 @@ jobs:
             - Create or update branches or PRs as needed.
             - Summarize results in a GitHub comment.
             Available agents:
-            - /agents/backend_agent.yaml
+            - /agents/backend_agent.yaml       # Ensure branch creation logic exists in agents
             - /agents/frontend_agent.yaml
             - /agents/validator_agent.yaml
             - /agents/reality_manager.yaml
