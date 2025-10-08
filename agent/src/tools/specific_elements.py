@@ -1,6 +1,3 @@
-
-
-
 def find_links(item):
     return item.find_all('a', href=True)
 

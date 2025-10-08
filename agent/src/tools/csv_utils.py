@@ -1,4 +1,5 @@
 import csv
+import os
 from langchain_core.tools import tool
 
 @tool
@@ -24,4 +25,3 @@ def write_to_csv(data: list, filename: str = "output.csv") -> bool:
     except Exception as e:
         print(f"Error writing CSV: {e}")
         return False
-
