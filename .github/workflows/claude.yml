@@ -23,20 +23,30 @@ jobs:
       pull-requests: write
       issues: write
       id-token: write
-      actions: read
+      actions: write
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0  # full history needed
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git for GitHub Actions
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Ensure branch exists
         run: |
           BRANCH="claude/issue-${{ github.event.issue.number }}-$(date +%s)"
           git fetch origin main
           if ! git ls-remote --exit-code origin "$BRANCH"; then
-            git checkout -b "$BRANCH" main
+            echo "Creating new branch $BRANCH"
+            git checkout -b "$BRANCH" origin/main
             git push origin "$BRANCH"
+          else
+            echo "Branch $BRANCH already exists, skipping creation"
           fi
 
       - name: Run Claude Overseer
