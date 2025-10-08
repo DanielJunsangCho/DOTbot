@@ -39,7 +39,7 @@ jobs:
 
       - name: Ensure branch exists
         run: |
-          BRANCH="claude/issue-${{ github.event.issue.number }}-$(date +%s)"
+          BRANCH="claude/issue-${{ github.event.issue.number }}"
           git fetch origin main
           if ! git ls-remote --exit-code origin "$BRANCH"; then
             echo "Creating new branch $BRANCH"
