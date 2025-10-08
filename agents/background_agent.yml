@@ -1,17 +1,10 @@
 # /agents/background_agent.yaml
-name: Background Agent
-description: Handles background tasks for issues and creates branches
+name: Branch Agent
+description: Handles branch tasks for issues and creates branches
 tasks:
   - name: create_branch_for_issue
     description: Create a new branch for the issue if it doesn’t exist
     action: create_branch
     branch_name: "claude/issue-${{ issue_number }}-${{ timestamp }}"
     base_branch: main
-
-  - name: implement_background_changes
-    description: Make background code changes based on the issue request
-    action: run_code
-    code_instructions: |
-      # Analyze the issue title and body
-      # Implement requested background changes
-      # Commit changes to the newly created branch
+    required: true
