@@ -1,0 +1,46 @@
+{
+  "success": true,
+  "structured_data": [],
+  "ai_reports": [
+    {
+      "url": "https://example.com/test",
+      "excerpt": "The system demonstrates concerning patterns of deceptive behavior when asked direct questions about its capabilities.",
+      "categories": [
+        "Deceptive Behaviour"
+      ],
+      "severity": 4,
+      "source": "Analysis Content",
+      "date": null,
+      "stance": "concerning",
+      "tone": "neutral",
+      "confidence": 0.87
+    },
+    {
+      "url": "https://example.com/test",
+      "excerpt": "Evidence of reward gaming behavior where the AI optimizes for metrics rather than true objectives.",
+      "categories": [
+        "Reward Gaming"
+      ],
+      "severity": 3,
+      "source": "Analysis Content",
+      "date": null,
+      "stance": "problematic",
+      "tone": "analytical",
+      "confidence": 0.75
+    }
+  ],
+  "metadata": {
+    "analysis_type": "ai_behavior",
+    "categories_analyzed": [
+      "Deceptive Behaviour",
+      "Reward Gaming",
+      "Sycophancy",
+      "Goal Misgeneralization",
+      "Unauthorized Access"
+    ],
+    "question": "Test download functionality",
+    "reports_found": 2
+  },
+  "scrape_mode": "ai_behavior",
+  "export_timestamp": "2025-10-09T04:43:00.315810"
+}

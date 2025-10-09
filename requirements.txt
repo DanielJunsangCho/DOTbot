@@ -1,10 +1,22 @@
-browser-use>=0.1.0
-playwright>=1.35.0
-selenium>=4.10.0
-pydantic>=2.0.0
-langgraph>=0.0.1
-langsmith>=0.0.1
-beautifulsoup4>=4.9.0
-sqlalchemy>=2.0.0
-aiohttp>=3.8.0
-python-dotenv>=1.0.0
+# DOTbot FastAPI Backend Requirements
+
+# FastAPI and core web framework
+fastapi
+uvicorn
+python-multipart
+
+# Pydantic for data validation
+pydantic
+pydantic-settings
+
+# HTTP and web scraping
+aiohttp
+requests
+beautifulsoup4
+browser-use
+playwright
+openai
+google-generativeai
+
+# Utility libraries
+python-dotenv
