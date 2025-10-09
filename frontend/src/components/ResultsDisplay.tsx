@@ -58,16 +58,16 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
   </div>
 );
 
-const getSeverityColor = (severity: number): 'success' | 'warning' | 'error' => {
-  if (severity <= 2) return 'success';
-  if (severity <= 3) return 'warning';
-  return 'error';
+const getConfidenceColor = (confidence: number): 'success' | 'warning' | 'error' => {
+  if (confidence >= 0.8) return 'error';
+  if (confidence >= 0.6) return 'warning';
+  return 'success';
 };
 
-const getSeverityLabel = (severity: number): string => {
-  if (severity <= 2) return 'Low';
-  if (severity <= 3) return 'Medium';
-  return 'High';
+const getConfidenceLabel = (confidence: number): string => {
+  if (confidence >= 0.8) return 'High';
+  if (confidence >= 0.6) return 'Medium';
+  return 'Low';
 };
 
 export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ 
@@ -83,12 +83,12 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
 
   // Calculate summary statistics
   const totalIssues = aiReports.length;
-  const highSeverityIssues = aiReports.filter(report => report.severity >= 4).length;
-  const mediumSeverityIssues = aiReports.filter(report => report.severity === 3).length;
-  const lowSeverityIssues = aiReports.filter(report => report.severity <= 2).length;
+  const highConfidenceIssues = aiReports.filter(report => report.confidence >= 0.8).length;
+  const mediumConfidenceIssues = aiReports.filter(report => report.confidence >= 0.6 && report.confidence < 0.8).length;
+  const lowConfidenceIssues = aiReports.filter(report => report.confidence < 0.6).length;
 
-  const averageSeverity = aiReports.length > 0 
-    ? aiReports.reduce((sum, report) => sum + report.severity, 0) / aiReports.length
+  const averageConfidence = aiReports.length > 0 
+    ? aiReports.reduce((sum, report) => sum + report.confidence, 0) / aiReports.length
     : 0;
 
   const categoryCount = aiReports.reduce((acc, report) => {
@@ -141,7 +141,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
           {/* Summary Alert */}
           {hasAIReports ? (
             <Alert 
-              severity={averageSeverity >= 4 ? 'error' : averageSeverity >= 3 ? 'warning' : 'info'}
+              severity={averageConfidence >= 0.8 ? 'error' : averageConfidence >= 0.6 ? 'warning' : 'info'}
               sx={{ mb: 3 }}
               icon={<Psychology />}
             >
@@ -150,7 +150,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
               </Typography>
               <Typography variant="body2">
                 Found {totalIssues} potential issues across {Object.keys(categoryCount).length} categories.
-                Average severity: {averageSeverity.toFixed(1)}/5
+                Average confidence: {(averageConfidence * 100).toFixed(0)}%
               </Typography>
             </Alert>
           ) : (
@@ -170,30 +170,30 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
               <Grid item xs={12} sm={3}>
                 <Paper elevation={2} sx={{ p: 2, textAlign: 'center' }}>
                   <Typography variant="h3" color="error.main" fontWeight="bold">
-                    {highSeverityIssues}
+                    {highConfidenceIssues}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    High Severity
+                    High Confidence
                   </Typography>
                 </Paper>
               </Grid>
               <Grid item xs={12} sm={3}>
                 <Paper elevation={2} sx={{ p: 2, textAlign: 'center' }}>
                   <Typography variant="h3" color="warning.main" fontWeight="bold">
-                    {mediumSeverityIssues}
+                    {mediumConfidenceIssues}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Medium Severity
+                    Medium Confidence
                   </Typography>
                 </Paper>
               </Grid>
               <Grid item xs={12} sm={3}>
                 <Paper elevation={2} sx={{ p: 2, textAlign: 'center' }}>
                   <Typography variant="h3" color="success.main" fontWeight="bold">
-                    {lowSeverityIssues}
+                    {lowConfidenceIssues}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Low Severity
+                    Low Confidence
                   </Typography>
                 </Paper>
               </Grid>
@@ -254,7 +254,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
                       <AccordionSummary expandIcon={<ExpandMore />}>
                         <Box display="flex" alignItems="center" width="100%">
                           <Warning 
-                            color={getSeverityColor(report.severity)} 
+                            color={getConfidenceColor(report.confidence)} 
                             sx={{ mr: 2 }} 
                           />
                           <Box flexGrow={1}>
@@ -263,18 +263,19 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
                             </Typography>
                             <Box display="flex" alignItems="center" gap={1} mt={1}>
                               <Chip
-                                label={`Severity: ${getSeverityLabel(report.severity)}`}
-                                color={getSeverityColor(report.severity)}
+                                label={`Confidence: ${getConfidenceLabel(report.confidence)}`}
+                                color={getConfidenceColor(report.confidence)}
                                 size="small"
                               />
                               <Rating
-                                value={report.severity}
+                                value={report.confidence * 5}
                                 max={5}
                                 size="small"
                                 readOnly
+                                precision={0.1}
                               />
                               <Chip
-                                label={`${(report.confidence * 100).toFixed(0)}% confidence`}
+                                label={`${(report.confidence * 100).toFixed(0)}%`}
                                 variant="outlined"
                                 size="small"
                               />

@@ -710,7 +710,6 @@ class TaskOrchestrator:
                             "url": url,
                             "excerpt": scraping_service._extract_relevant_excerpt(content, category),
                             "categories": [category],
-                            "severity": scraping_service._calculate_severity(content, category),
                             "source": data_item.get('source', f"Analysis of {url}"),
                             "confidence": 0.75,  # Default confidence
                             "stance": "concerning",

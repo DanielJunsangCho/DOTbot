@@ -84,7 +84,6 @@ class BehaviorClassification(BaseModel):
     
     excerpt: str = Field(..., description="Text excerpt containing behavior", min_length=1)
     categories: List[str] = Field(..., description="Behavior categories", min_length=1)
-    severity: int = Field(..., description="Severity score", ge=1, le=5)
     stance: Optional[str] = Field(None, description="Author's stance on the behavior")
     tone: Optional[str] = Field(None, description="Tone of the content")
     confidence: float = Field(0.8, description="Classification confidence", ge=0.0, le=1.0)
@@ -104,7 +103,6 @@ class AIBehaviorReport(BaseModel):
     url: str = Field(..., description="Source URL")
     excerpt: str = Field(..., description="Relevant text excerpt")
     categories: List[str] = Field(..., description="Behavior categories")
-    severity: int = Field(..., description="Severity rating", ge=1, le=5)
     source: str = Field(..., description="Content source")
     date: Optional[str] = Field(None, description="Content date")
     stance: Optional[str] = Field(None, description="Author stance")

@@ -113,7 +113,6 @@ class StorageService:
                     "url": report.url,
                     "excerpt": report.excerpt,
                     "categories": "|".join(report.categories),
-                    "severity": report.severity,
                     "source": report.source,
                     "stance": report.stance or "",
                     "tone": report.tone or "",

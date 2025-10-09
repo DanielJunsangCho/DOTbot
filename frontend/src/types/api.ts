@@ -16,7 +16,6 @@ export interface AIBehaviorReport {
   url: string;
   excerpt: string;
   categories: string[];
-  severity: number;
   source: string;
   date?: string;
   stance?: string;

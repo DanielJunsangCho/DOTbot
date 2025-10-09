@@ -379,7 +379,6 @@ class ExportNode(BaseLangGraphNode):
                     "url": report.url,
                     "excerpt": report.excerpt,
                     "categories": report.categories,
-                    "severity": report.severity,
                     "source": report.source,
                     "date": report.date,
                     "stance": report.stance,
@@ -405,7 +404,7 @@ class ExportNode(BaseLangGraphNode):
                 # Export AI reports as CSV
                 writer = csv.writer(f)
                 writer.writerow([
-                    'URL', 'Excerpt', 'Categories', 'Severity', 
+                    'URL', 'Excerpt', 'Categories', 
                     'Source', 'Date', 'Stance', 'Tone', 'Confidence'
                 ])
                 for report in data.ai_reports:
@@ -413,7 +412,6 @@ class ExportNode(BaseLangGraphNode):
                         report.url,
                         report.excerpt,
                         ', '.join(report.categories),
-                        report.severity,
                         report.source,
                         report.date or '',
                         report.stance or '',

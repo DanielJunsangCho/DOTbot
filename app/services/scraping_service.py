@@ -330,7 +330,6 @@ class ScrapingService:
                             url=url,
                             excerpt=self._extract_relevant_excerpt(content, category),
                             categories=[category],
-                            severity=self._calculate_severity(content, category),
                             source=f"Analysis of {url}",
                             confidence=0.75,  # Default confidence
                             stance="concerning",
@@ -394,23 +393,3 @@ class ScrapingService:
         # Fallback: return first meaningful chunk
         return content[:200] + ("..." if len(content) > 200 else "")
     
-    def _calculate_severity(self, content: str, category: str) -> int:
-        """Calculate severity score (1-5) based on content analysis"""
-        
-        # Simple heuristic based on content length and keyword density
-        content_length = len(content)
-        
-        # More content generally indicates more detailed/severe issues
-        if content_length > 1000:
-            base_severity = 4
-        elif content_length > 500:
-            base_severity = 3
-        else:
-            base_severity = 2
-        
-        # Adjust based on category
-        high_severity_categories = ["Deceptive Behaviour", "Unauthorized Access", "Power Seeking"]
-        if category in high_severity_categories:
-            base_severity = min(5, base_severity + 1)
-        
-        return base_severity

@@ -227,7 +227,7 @@ class WorkflowService:
             },
             "ai_behavior": {
                 "description": "Specialized AI behavior analysis",
-                "capabilities": ["deep_content_analysis", "behavior_categorization", "severity_scoring"],
+                "capabilities": ["deep_content_analysis", "behavior_categorization"],
                 "categories": [
                     "Deceptive Behaviour", "Reward Gaming", "Sycophancy", 
                     "Goal Misgeneralization", "Unauthorized Access"
@@ -370,7 +370,6 @@ class WorkflowService:
                             "url": report.url,
                             "excerpt": report.excerpt,
                             "categories": report.categories,
-                            "severity": report.severity,
                             "source": report.source,
                             "date": report.date,
                             "stance": report.stance,
@@ -393,7 +392,7 @@ class WorkflowService:
                     with open(file_path, 'w', newline='') as f:
                         writer = csv.writer(f)
                         writer.writerow([
-                            'URL', 'Excerpt', 'Categories', 'Severity', 
+                            'URL', 'Excerpt', 'Categories', 
                             'Source', 'Date', 'Stance', 'Tone', 'Confidence'
                         ])
                         for report in result.ai_reports:
@@ -401,7 +400,6 @@ class WorkflowService:
                                 report.url,
                                 report.excerpt,
                                 ', '.join(report.categories),
-                                report.severity,
                                 report.source,
                                 report.date or '',
                                 report.stance or '',
