@@ -260,6 +260,33 @@ npm install
 npm start
 ```
 
+**Docker Development Setup:**
+```bash
+# Stop any running local processes first (Ctrl+C in their terminals)
+
+# Build and start all services
+docker-compose up --build
+
+# Or to run in background:
+docker-compose up --build -d
+
+# To stop all services:
+docker-compose down
+
+# To restart services:
+docker-compose restart
+
+# To rebuild and restart (after code changes):
+docker-compose down && docker-compose up --build
+
+# To view logs:
+docker-compose logs -f
+
+# To view logs for specific service:
+docker-compose logs -f backend
+docker-compose logs -f frontend
+```
+
 **Access Points:**
 - Backend API: `http://localhost:8000`
 - Frontend UI: `http://localhost:3000`

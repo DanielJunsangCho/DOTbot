@@ -36,10 +36,12 @@ import {
   Psychology,
   Security,
   TrendingUp,
-  Assessment
+  Assessment,
+  GetApp,
+  Link as LinkIcon
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
-import { WorkflowOutput, AIBehaviorReport } from '../types/api';
+import { WorkflowOutput } from '../types/api';
 
 interface ResultsDisplayProps {
   results: WorkflowOutput;
@@ -108,6 +110,52 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
     }
   };
 
+  const downloadAsJSON = () => {
+    const dataStr = JSON.stringify(results, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    const exportFileDefaultName = `ai-analysis-${new Date().toISOString().split('T')[0]}.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+  };
+
+  const downloadAsCSV = () => {
+    const csvRows = [];
+    csvRows.push(['Source', 'Categories', 'Confidence', 'Excerpt', 'Stance', 'Tone', 'Date']);
+    
+    aiReports.forEach(report => {
+      csvRows.push([
+        report.source,
+        report.categories.join('; '),
+        (report.confidence * 100).toFixed(1) + '%',
+        `"${report.excerpt.replace(/"/g, '""')}"`,
+        report.stance || '',
+        report.tone || '',
+        report.date || ''
+      ]);
+    });
+    
+    const csvContent = csvRows.map(row => row.join(',')).join('\n');
+    const dataUri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
+    const exportFileDefaultName = `ai-analysis-${new Date().toISOString().split('T')[0]}.csv`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+  };
+
+  const isValidURL = (string: string) => {
+    try {
+      new URL(string);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -126,16 +174,35 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
                 Analysis completed for: {results.metadata?.url || 'target website'}
               </Typography>
             </Box>
-            {results.export_path && (
+            <Box display="flex" gap={1}>
+              {results.export_path && (
+                <Button
+                  variant="outlined"
+                  startIcon={<Download />}
+                  onClick={handleDownload}
+                  size="small"
+                >
+                  Download Report
+                </Button>
+              )}
               <Button
                 variant="outlined"
-                startIcon={<Download />}
-                onClick={handleDownload}
-                sx={{ ml: 2 }}
+                startIcon={<GetApp />}
+                onClick={downloadAsJSON}
+                size="small"
               >
-                Download Report
+                JSON
               </Button>
-            )}
+              <Button
+                variant="outlined"
+                startIcon={<GetApp />}
+                onClick={downloadAsCSV}
+                size="small"
+                disabled={!hasAIReports}
+              >
+                CSV
+              </Button>
+            </Box>
           </Box>
 
           {/* Summary Alert */}
@@ -300,7 +367,31 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
                           <Grid container spacing={2}>
                             <Grid item xs={12} sm={6}>
                               <Typography variant="body2">
-                                <strong>Source:</strong> {report.source}
+                                <strong>Source:</strong>{' '}
+                                {isValidURL(report.source) ? (
+                                  <Button
+                                    component="a"
+                                    href={report.source}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    variant="text"
+                                    size="small"
+                                    startIcon={<LinkIcon />}
+                                    sx={{ 
+                                      textTransform: 'none',
+                                      p: 0,
+                                      minWidth: 'auto',
+                                      fontSize: 'inherit',
+                                      fontWeight: 'normal'
+                                    }}
+                                  >
+                                    {report.source.length > 50 
+                                      ? report.source.substring(0, 50) + '...' 
+                                      : report.source}
+                                  </Button>
+                                ) : (
+                                  report.source
+                                )}
                               </Typography>
                               {report.stance && (
                                 <Typography variant="body2">

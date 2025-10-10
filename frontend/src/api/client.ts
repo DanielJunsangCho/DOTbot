@@ -4,11 +4,11 @@
  */
 
 import axios, { AxiosResponse } from 'axios';
-import { ScrapeRequest, WorkflowOutput, WorkflowStatus, EvaluationMetrics } from '../types/api';
+import { ScrapeRequest, WorkflowOutput, WorkflowStatus } from '../types/api';
 
 // Create axios instance with base configuration
 export const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8000',
+  baseURL: process.env.REACT_APP_API_URL || '',
   timeout: 120000, // 2 minute timeout for initial requests
   headers: {
     'Content-Type': 'application/json',
@@ -17,7 +17,7 @@ export const api = axios.create({
 
 // Separate instance for async operations with shorter timeout
 export const asyncApi = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8000',
+  baseURL: process.env.REACT_APP_API_URL || '',
   timeout: 10000, // 10 second timeout for status checks
   headers: {
     'Content-Type': 'application/json',
