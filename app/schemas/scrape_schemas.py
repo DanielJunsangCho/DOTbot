@@ -102,12 +102,15 @@ class AIBehaviorReport(BaseModel):
     
     url: str = Field(..., description="Source URL")
     excerpt: str = Field(..., description="Relevant text excerpt")
+    full_text: str = Field(..., description="Complete text content for detailed viewing")
     categories: List[str] = Field(..., description="Behavior categories")
     source: str = Field(..., description="Content source")
     date: Optional[str] = Field(None, description="Content date")
     stance: Optional[str] = Field(None, description="Author stance")
     tone: Optional[str] = Field(None, description="Content tone")
-    confidence: float = Field(0.8, description="Analysis confidence", ge=0.0, le=1.0)
+    confidence: int = Field(..., description="Analysis confidence (1-100)", ge=1, le=100)
+    keywords: List[str] = Field(default_factory=list, description="Detected keywords indicating behavior")
+    reasoning: str = Field(..., description="LLM reasoning for detection")
 
 
 class ScrapeResult(BaseModel):

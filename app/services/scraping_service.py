@@ -310,73 +310,59 @@ class ScrapingService:
         categories: List[str], 
         question: str
     ) -> List[Any]:
-        """Analyze scraped content for AI behavior patterns"""
+        """Analyze scraped content for AI behavior patterns using LLM evaluator"""
         
         # Import here to avoid circular dependencies
         from app.schemas import AIBehaviorReport
+        from app.services.ai_behavior_evaluator import AIBehaviorEvaluator
         
         ai_reports = []
         
         try:
+            # Initialize LLM evaluator
+            evaluator = AIBehaviorEvaluator(api_key=os.getenv("OPENAI_API_KEY"))
+            
             for data_item in raw_data:
                 content = data_item.text if hasattr(data_item, 'text') else str(data_item)
                 url = data_item.url if hasattr(data_item, 'url') else 'unknown'
                 
-                # Simple keyword-based analysis for AI behavior patterns
-                # In a full implementation, this would use LLM analysis
+                # Skip very short content
+                if len(content.strip()) < 50:
+                    continue
+                
+                # Analyze each category using LLM evaluator
                 for category in categories:
-                    if self._detect_behavior_in_content(content, category, question):
-                        report = AIBehaviorReport(
-                            url=url,
-                            excerpt=self._extract_relevant_excerpt(content, category),
-                            categories=[category],
-                            source=f"Analysis of {url}",
-                            confidence=0.75,  # Default confidence
-                            stance="concerning",
-                            tone="analytical"
-                        )
-                        ai_reports.append(report)
+                    try:
+                        detection = await evaluator.evaluate_content(content, category, question)
+                        
+                        # Only create reports for detected behaviors
+                        if detection.detected:
+                            report = AIBehaviorReport(
+                                url=url,
+                                excerpt=self._extract_relevant_excerpt(content, category),
+                                full_text=content.replace('\\n', '\n').replace('\\t', '\t'),  # Convert escaped characters to real ones
+                                categories=[category],
+                                source=f"Analysis of {url}",
+                                confidence=detection.confidence,  # Use LLM confidence (1-100)
+                                keywords=detection.keywords,  # Include detected keywords
+                                reasoning=detection.reasoning,  # Include LLM reasoning
+                                stance="concerning",
+                                tone="analytical"
+                            )
+                            ai_reports.append(report)
+                            logger.debug(f"Detected {category} behavior in {url} (confidence: {detection.confidence})")
+                        
+                    except Exception as e:
+                        logger.error(f"Failed to analyze {category} for {url}: {e}")
+                        continue
             
-            logger.info(f"Generated {len(ai_reports)} AI behavior reports")
+            logger.info(f"Generated {len(ai_reports)} AI behavior reports from LLM analysis")
             return ai_reports
             
         except Exception as e:
             logger.error(f"AI behavior analysis failed: {e}")
             return []
     
-    def _detect_behavior_in_content(self, content: str, category: str, question: str) -> bool:
-        """Simple pattern detection for AI behavior categories"""
-        
-        content_lower = content.lower()
-        question_lower = question.lower()
-        
-        # Define keyword patterns for different AI behavior categories
-        behavior_patterns = {
-            "Deceptive Behaviour": ["mislead", "deceive", "false", "lie", "manipulate"],
-            "Reward Gaming": ["optimize", "metric", "reward", "gaming", "hack"],
-            "Sycophancy": ["please", "agree", "approval", "flatter", "compliant"],
-            "Goal Misgeneralization": ["objective", "goal", "target", "misalign", "drift"],
-            "Unauthorized Access": ["access", "permission", "unauthorized", "hack", "breach"],
-            "Proxy Goal Formation": ["proxy", "substitute", "indirect", "surrogate"],
-            "Power Seeking": ["power", "control", "influence", "dominance", "authority"],
-            "Social Engineering": ["manipulate", "social", "persuade", "influence", "trick"],
-            "Cognitive Off-Policy Behavior": ["off-policy", "unexpected", "deviation", "anomaly"],
-            "Collusion": ["coordinate", "collaborate", "conspiracy", "collusion", "alliance"]
-        }
-        
-        patterns = behavior_patterns.get(category, [])
-        
-        # Check if any behavior patterns are present
-        pattern_matches = sum(1 for pattern in patterns if pattern in content_lower)
-        question_relevance = sum(1 for pattern in patterns if pattern in question_lower)
-        
-        # More sensitive detection for testing - single pattern match is enough
-        result = pattern_matches >= 1 or question_relevance >= 1
-        
-        # Debug logging
-        logger.debug(f"Detection for '{category}': patterns={patterns}, content_matches={pattern_matches}, question_matches={question_relevance}, result={result}")
-        
-        return result
     
     def _extract_relevant_excerpt(self, content: str, category: str) -> str:
         """Extract a relevant excerpt from content for the behavior category"""

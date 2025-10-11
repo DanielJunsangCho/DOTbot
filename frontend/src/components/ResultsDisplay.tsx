@@ -25,7 +25,13 @@ import {
   AccordionSummary,
   AccordionDetails,
   LinearProgress,
-  Divider
+  Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton,
+  Tooltip
 } from '@mui/material';
 import {
   Warning,
@@ -38,7 +44,9 @@ import {
   TrendingUp,
   Assessment,
   GetApp,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Visibility,
+  Search
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { WorkflowOutput } from '../types/api';
@@ -61,14 +69,14 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
 );
 
 const getConfidenceColor = (confidence: number): 'success' | 'warning' | 'error' => {
-  if (confidence >= 0.8) return 'error';
-  if (confidence >= 0.6) return 'warning';
+  if (confidence >= 80) return 'error';
+  if (confidence >= 60) return 'warning';
   return 'success';
 };
 
 const getConfidenceLabel = (confidence: number): string => {
-  if (confidence >= 0.8) return 'High';
-  if (confidence >= 0.6) return 'Medium';
+  if (confidence >= 80) return 'High';
+  if (confidence >= 60) return 'Medium';
   return 'Low';
 };
 
@@ -77,6 +85,11 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
   onDownload 
 }) => {
   const [tabValue, setTabValue] = useState(0);
+  const [fullTextDialog, setFullTextDialog] = useState<{ open: boolean; content: string; title: string }>({ 
+    open: false, 
+    content: '', 
+    title: '' 
+  });
 
   const aiReports = results.result?.ai_reports || [];
   const structuredData = results.result?.structured_data || [];
@@ -85,9 +98,9 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
 
   // Calculate summary statistics
   const totalIssues = aiReports.length;
-  const highConfidenceIssues = aiReports.filter(report => report.confidence >= 0.8).length;
-  const mediumConfidenceIssues = aiReports.filter(report => report.confidence >= 0.6 && report.confidence < 0.8).length;
-  const lowConfidenceIssues = aiReports.filter(report => report.confidence < 0.6).length;
+  const highConfidenceIssues = aiReports.filter(report => report.confidence >= 80).length;
+  const mediumConfidenceIssues = aiReports.filter(report => report.confidence >= 60 && report.confidence < 80).length;
+  const lowConfidenceIssues = aiReports.filter(report => report.confidence < 60).length;
 
   const averageConfidence = aiReports.length > 0 
     ? aiReports.reduce((sum, report) => sum + report.confidence, 0) / aiReports.length
@@ -110,6 +123,14 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
     }
   };
 
+  const handleOpenFullText = (fullText: string, title: string) => {
+    setFullTextDialog({ open: true, content: fullText, title });
+  };
+
+  const handleCloseFullText = () => {
+    setFullTextDialog({ open: false, content: '', title: '' });
+  };
+
   const downloadAsJSON = () => {
     const dataStr = JSON.stringify(results, null, 2);
     const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
@@ -123,14 +144,17 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
 
   const downloadAsCSV = () => {
     const csvRows = [];
-    csvRows.push(['Source', 'Categories', 'Confidence', 'Excerpt', 'Stance', 'Tone', 'Date']);
+    csvRows.push(['Source', 'Categories', 'Confidence', 'Excerpt', 'Full_Text', 'Keywords', 'Reasoning', 'Stance', 'Tone', 'Date']);
     
     aiReports.forEach(report => {
       csvRows.push([
         report.source,
         report.categories.join('; '),
-        (report.confidence * 100).toFixed(1) + '%',
+        report.confidence + '%',
         `"${report.excerpt.replace(/"/g, '""')}"`,
+        `"${(report as any).full_text?.replace(/"/g, '""') || report.excerpt}"`,
+        (report as any).keywords?.join('; ') || '',
+        `"${(report as any).reasoning?.replace(/"/g, '""') || ''}"`,
         report.stance || '',
         report.tone || '',
         report.date || ''
@@ -208,7 +232,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
           {/* Summary Alert */}
           {hasAIReports ? (
             <Alert 
-              severity={averageConfidence >= 0.8 ? 'error' : averageConfidence >= 0.6 ? 'warning' : 'info'}
+              severity={averageConfidence >= 80 ? 'error' : averageConfidence >= 60 ? 'warning' : 'info'}
               sx={{ mb: 3 }}
               icon={<Psychology />}
             >
@@ -217,7 +241,7 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
               </Typography>
               <Typography variant="body2">
                 Found {totalIssues} potential issues across {Object.keys(categoryCount).length} categories.
-                Average confidence: {(averageConfidence * 100).toFixed(0)}%
+                Average confidence: {averageConfidence.toFixed(0)}%
               </Typography>
             </Alert>
           ) : (
@@ -335,14 +359,14 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
                                 size="small"
                               />
                               <Rating
-                                value={report.confidence * 5}
+                                value={report.confidence / 20}
                                 max={5}
                                 size="small"
                                 readOnly
                                 precision={0.1}
                               />
                               <Chip
-                                label={`${(report.confidence * 100).toFixed(0)}%`}
+                                label={`${report.confidence}%`}
                                 variant="outlined"
                                 size="small"
                               />
@@ -352,17 +376,91 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
                       </AccordionSummary>
                       <AccordionDetails>
                         <Box>
-                          <Typography variant="body1" paragraph>
-                            <strong>Evidence:</strong>
-                          </Typography>
+                          <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                            <Typography variant="body1">
+                              <strong>Evidence:</strong>
+                            </Typography>
+                            {(report as any).full_text && (
+                              <Tooltip title="View full text">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleOpenFullText(
+                                    (report as any).full_text, 
+                                    `Full Text - ${report.categories.join(', ')}`
+                                  )}
+                                >
+                                  <Visibility />
+                                </IconButton>
+                              </Tooltip>
+                            )}
+                          </Box>
                           <Paper 
                             variant="outlined" 
-                            sx={{ p: 2, backgroundColor: 'grey.50', mb: 2 }}
+                            sx={{ 
+                              p: 2, 
+                              backgroundColor: 'grey.50', 
+                              mb: 2,
+                              cursor: (report as any).full_text ? 'pointer' : 'default',
+                              '&:hover': {
+                                backgroundColor: (report as any).full_text ? 'grey.100' : 'grey.50'
+                              }
+                            }}
+                            onClick={() => {
+                              if ((report as any).full_text) {
+                                handleOpenFullText(
+                                  (report as any).full_text, 
+                                  `Full Text - ${report.categories.join(', ')}`
+                                );
+                              }
+                            }}
                           >
                             <Typography variant="body2" style={{ fontStyle: 'italic' }}>
                               "{report.excerpt}"
                             </Typography>
+                            {(report as any).full_text && (
+                              <Box display="flex" alignItems="center" mt={1}>
+                                <Visibility sx={{ fontSize: 16, mr: 0.5, color: 'text.secondary' }} />
+                                <Typography variant="caption" color="text.secondary">
+                                  Click to view full text
+                                </Typography>
+                              </Box>
+                            )}
                           </Paper>
+
+                          {/* Keywords Section */}
+                          {(report as any).keywords && (report as any).keywords.length > 0 && (
+                            <Box mb={2}>
+                              <Typography variant="body2" gutterBottom>
+                                <strong>Detected Keywords:</strong>
+                              </Typography>
+                              <Box display="flex" flexWrap="wrap" gap={0.5}>
+                                {(report as any).keywords.map((keyword: string, idx: number) => (
+                                  <Chip
+                                    key={idx}
+                                    label={keyword}
+                                    size="small"
+                                    variant="outlined"
+                                    icon={<Search />}
+                                    color="primary"
+                                  />
+                                ))}
+                              </Box>
+                            </Box>
+                          )}
+
+                          {/* LLM Reasoning Section */}
+                          {(report as any).reasoning && (
+                            <Box mb={2}>
+                              <Typography variant="body2" gutterBottom>
+                                <strong>Analysis Reasoning:</strong>
+                              </Typography>
+                              <Paper variant="outlined" sx={{ p: 1.5, backgroundColor: 'grey.25' }}>
+                                <Typography variant="body2">
+                                  {(report as any).reasoning}
+                                </Typography>
+                              </Paper>
+                            </Box>
+                          )}
                           
                           <Grid container spacing={2}>
                             <Grid item xs={12} sm={6}>
@@ -497,6 +595,48 @@ export const ResultsDisplay: React.FC<ResultsDisplayProps> = ({
           )}
         </CardContent>
       </Card>
+
+      {/* Full Text Dialog */}
+      <Dialog
+        open={fullTextDialog.open}
+        onClose={handleCloseFullText}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: { maxHeight: '80vh' }
+        }}
+      >
+        <DialogTitle>
+          <Box display="flex" alignItems="center">
+            <Visibility sx={{ mr: 1 }} />
+            {fullTextDialog.title}
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Paper
+            variant="outlined"
+            sx={{ 
+              p: 2, 
+              backgroundColor: 'grey.50', 
+              maxHeight: '60vh', 
+              overflow: 'auto' 
+            }}
+          >
+            <Typography 
+              variant="body2" 
+              component="pre"
+              sx={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}
+            >
+              {fullTextDialog.content}
+            </Typography>
+          </Paper>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseFullText}>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </motion.div>
   );
 };

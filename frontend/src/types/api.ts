@@ -15,12 +15,15 @@ export interface ScrapeRequest {
 export interface AIBehaviorReport {
   url: string;
   excerpt: string;
+  full_text: string;
   categories: string[];
   source: string;
   date?: string;
   stance?: string;
   tone?: string;
-  confidence: number;
+  confidence: number; // Now 1-100 range
+  keywords: string[];
+  reasoning: string;
 }
 
 export interface ScrapeResult {

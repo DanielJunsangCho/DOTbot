@@ -679,56 +679,83 @@ class TaskOrchestrator:
         categories: List[str], 
         question: str
     ) -> List[Dict[str, Any]]:
-        """Analyze scraped content for AI behavior patterns using the scraping service logic"""
+        """Analyze scraped content for AI behavior patterns using LLM evaluator"""
         
-        # Use the same analysis logic from scraping service
-        from app.services.scraping_service import ScrapingService
-        scraping_service = ScrapingService()
+        from app.services.ai_behavior_evaluator import AIBehaviorEvaluator
+        import os
         
         ai_reports = []
         
         try:
+            # Initialize LLM evaluator
+            evaluator = AIBehaviorEvaluator(api_key=os.getenv("OPENAI_API_KEY"))
+            
             for i, data_item in enumerate(scraped_data):
                 content = data_item.get('full_text', data_item.get('text', ''))
                 url = data_item.get('url', 'unknown')
                 
                 logger.debug(f"DEBUG: Analyzing item {i}: url={url}, content_length={len(content)}")
-                logger.debug(f"DEBUG: Content preview: {content[:200]}...")
                 
                 # Skip if content is too short or contains error messages
-                if len(content) < 50 or "Too Many Requests" in content or "Error:" in content:
+                if len(content.strip()) < 50 or "Too Many Requests" in content or "Error:" in content:
                     logger.debug(f"DEBUG: Skipping item {i} - too short or error content")
                     continue
                 
-                # Analyze each piece of content for AI behavior patterns
+                # Analyze each piece of content for AI behavior patterns using LLM
                 reports_for_item = 0
                 for category in categories:
-                    logger.debug(f"DEBUG: Testing category '{category}' against content")
-                    if scraping_service._detect_behavior_in_content(content, category, question):
-                        logger.debug(f"DEBUG: MATCH found for category '{category}'!")
-                        report = {
-                            "url": url,
-                            "excerpt": scraping_service._extract_relevant_excerpt(content, category),
-                            "categories": [category],
-                            "source": data_item.get('source', f"Analysis of {url}"),
-                            "confidence": 0.75,  # Default confidence
-                            "stance": "concerning",
-                            "tone": "analytical",
-                            "date": data_item.get('timestamp', datetime.utcnow().isoformat())
-                        }
-                        ai_reports.append(report)
-                        reports_for_item += 1
-                    else:
-                        logger.debug(f"DEBUG: No match for category '{category}'")
+                    try:
+                        logger.debug(f"DEBUG: Testing category '{category}' against content using LLM")
+                        detection = await evaluator.evaluate_content(content, category, question)
+                        
+                        # Only create reports for detected behaviors
+                        if detection.detected:
+                            logger.debug(f"DEBUG: MATCH found for category '{category}' with confidence {detection.confidence}!")
+                            report = {
+                                "url": url,
+                                "excerpt": self._extract_relevant_excerpt(content, category),
+                                "full_text": content.replace('\\n', '\n').replace('\\t', '\t'),  # Convert escaped characters to real ones
+                                "categories": [category],
+                                "source": data_item.get('source', f"Analysis of {url}"),
+                                "confidence": detection.confidence,  # Use LLM confidence (1-100)
+                                "keywords": detection.keywords,  # Include detected keywords
+                                "reasoning": detection.reasoning,  # Include LLM reasoning
+                                "stance": "concerning",
+                                "tone": "analytical",
+                                "date": data_item.get('timestamp', datetime.utcnow().isoformat())
+                            }
+                            ai_reports.append(report)
+                            reports_for_item += 1
+                        else:
+                            logger.debug(f"DEBUG: No AI behavior detected for category '{category}'")
+                            
+                    except Exception as e:
+                        logger.error(f"Failed to analyze {category} for {url}: {e}")
+                        continue
                 
                 logger.debug(f"DEBUG: Item {i} generated {reports_for_item} reports")
             
-            logger.info(f"Generated {len(ai_reports)} AI behavior reports from {len(scraped_data)} items")
+            logger.info(f"Generated {len(ai_reports)} AI behavior reports from {len(scraped_data)} items using LLM analysis")
             return ai_reports
             
         except Exception as e:
             logger.error(f"AI behavior content analysis failed: {e}")
             return []
+    
+    def _extract_relevant_excerpt(self, content: str, category: str) -> str:
+        """Extract a relevant excerpt from content for the behavior category"""
+        
+        # Find sentences containing relevant keywords
+        sentences = content.split('.')
+        for sentence in sentences:
+            if len(sentence.strip()) > 20 and any(
+                keyword in sentence.lower() 
+                for keyword in ["ai", "behavior", "system", "model", category.lower()]
+            ):
+                return sentence.strip()[:200] + ("..." if len(sentence) > 200 else "")
+        
+        # Fallback: return first meaningful chunk
+        return content[:200] + ("..." if len(content) > 200 else "")
     
     async def cleanup_completed_tasks(self, max_age_hours: int = 24):
         """

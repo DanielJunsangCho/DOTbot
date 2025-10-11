@@ -52,7 +52,6 @@ export const UrlAnalysisForm: React.FC<UrlAnalysisFormProps> = ({
   const [url, setUrl] = useState<string>('');
   const [question, setQuestion] = useState<string>('');
   const [categories, setCategories] = useState<string[]>([]);
-  const [exportFormat, setExportFormat] = useState<'csv' | 'json'>('json');
   const [maxDepth, setMaxDepth] = useState<number>(2);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -71,8 +70,7 @@ export const UrlAnalysisForm: React.FC<UrlAnalysisFormProps> = ({
         'Sycophancy',
         'Goal Misgeneralization',
         'Unauthorized Access'
-      ],
-      export_format: exportFormat
+      ]
     };
 
     onSubmit(request);
@@ -175,20 +173,6 @@ export const UrlAnalysisForm: React.FC<UrlAnalysisFormProps> = ({
                 <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
                   Depth 2+ required for multi-page analysis (recommended for comprehensive results)
                 </Typography>
-              </Grid>
-
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Export Format</InputLabel>
-                  <Select
-                    value={exportFormat}
-                    label="Export Format"
-                    onChange={(e) => setExportFormat(e.target.value as any)}
-                  >
-                    <MenuItem value="json">JSON</MenuItem>
-                    <MenuItem value="csv">CSV</MenuItem>
-                  </Select>
-                </FormControl>
               </Grid>
 
               {/* AI Behavior Categories */}

@@ -394,13 +394,20 @@ async def get_task_results(
         for i, report_data in enumerate(ai_reports_data):
             try:
                 logger.debug(f"DEBUG: Processing AI report {i}: {report_data}")
+                # Get full_text and convert escaped characters
+                full_text = report_data.get("full_text", report_data.get("excerpt", ""))
+                if full_text:
+                    full_text = full_text.replace('\\n', '\n').replace('\\t', '\t')
+                
                 ai_report = AIBehaviorReport(
                     url=report_data["url"],
                     excerpt=report_data["excerpt"],
+                    full_text=full_text,  # Use processed full_text
                     categories=report_data["categories"],
-                    severity=report_data["severity"],
                     source=report_data["source"],
                     confidence=report_data["confidence"],
+                    keywords=report_data.get("keywords", []),  # New field
+                    reasoning=report_data.get("reasoning", "Analysis performed using pattern matching or LLM evaluation"),  # New field
                     stance=report_data.get("stance"),
                     tone=report_data.get("tone"),
                     date=report_data.get("date")
@@ -466,7 +473,7 @@ async def get_task_results(
 
 @router.get("/debug/test-ai-analysis")
 async def test_ai_analysis() -> Dict[str, Any]:
-    """Debug endpoint to test AI behavior analysis"""
+    """Debug endpoint to test AI behavior analysis using LLM evaluator"""
     
     # Test data
     test_content = {
@@ -481,22 +488,29 @@ async def test_ai_analysis() -> Dict[str, Any]:
     test_question = "What AI behaviors are concerning?"
     
     try:
-        # Import and test the analysis
-        from app.services.scraping_service import ScrapingService
-        scraping_service = ScrapingService()
+        # Import and test the LLM-based analysis
+        from app.services.ai_behavior_evaluator import AIBehaviorEvaluator
+        import os
+        
+        evaluator = AIBehaviorEvaluator(api_key=os.getenv("OPENAI_API_KEY"))
         
         reports = []
         for category in test_categories:
-            if scraping_service._detect_behavior_in_content(test_content["text"], category, test_question):
+            detection = await evaluator.evaluate_content(test_content["text"], category, test_question)
+            
+            if detection.detected:
                 report = {
                     "url": test_content["url"],
-                    "excerpt": scraping_service._extract_relevant_excerpt(test_content["text"], category),
+                    "excerpt": test_content["text"][:200] + "...",
+                    "full_text": test_content["full_text"].replace('\\n', '\n').replace('\\t', '\t'),  # Convert escaped characters
                     "categories": [category],
-                    "severity": scraping_service._calculate_severity(test_content["text"], category),
                     "source": test_content["source"],
-                    "confidence": 0.75,
+                    "confidence": detection.confidence,  # 1-100 range
+                    "keywords": detection.keywords,
+                    "reasoning": detection.reasoning,
                     "stance": "concerning",
-                    "tone": "analytical"
+                    "tone": "analytical",
+                    "date": test_content["timestamp"]
                 }
                 reports.append(report)
         
@@ -505,13 +519,17 @@ async def test_ai_analysis() -> Dict[str, Any]:
             "test_content": test_content,
             "categories_tested": test_categories,
             "reports_generated": len(reports),
-            "reports": reports
+            "reports": reports,
+            "llm_evaluation": True,
+            "api_available": evaluator.client is not None
         }
         
     except Exception as e:
+        logger.error(f"Debug AI analysis failed: {e}")
         return {
             "success": False,
-            "error": str(e)
+            "error": str(e),
+            "llm_evaluation": True
         }
 
 
